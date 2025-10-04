@@ -6,27 +6,30 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: { origin: '*' } // allow connections from any origin
+});
 
+// Rooms structure
 const rooms = {}; // { roomID: [socket1, socket2] }
 
 // Serve frontend
 app.get('/', (req, res) => {
-  const filePath = path.join(__dirname, 'client.html');
-  res.sendFile(filePath);
+  res.sendFile(path.join(__dirname, 'client.html'));
 });
 
 // Socket.io connection
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // Join room by code
+  // Join a room
   socket.on('join_room', (roomID) => {
     if (!rooms[roomID]) rooms[roomID] = [];
     rooms[roomID].push(socket.id);
     socket.join(roomID);
 
     if (rooms[roomID].length === 2) {
+      // Notify both users they are paired
       io.to(roomID).emit('paired', { room: roomID });
       console.log(`Room ${roomID} is ready`);
     } else {
@@ -45,8 +48,8 @@ io.on('connection', (socket) => {
     socket.to(room).emit('signal', data);
   });
 
+  // Disconnect
   socket.on('disconnect', () => {
-    // Remove socket from rooms
     for (const roomID in rooms) {
       rooms[roomID] = rooms[roomID].filter(id => id !== socket.id);
       if (rooms[roomID].length === 0) delete rooms[roomID];
