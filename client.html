@@ -2,19 +2,20 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Omegle Clone</title>
+<title>Omegle Clone – Friend Chat</title>
 <style>
 body{font-family:sans-serif;margin:20px;}
 #chat{border:1px solid #ccc;height:200px;overflow:auto;padding:5px;margin-top:10px;}
 #video-container{display:flex;gap:10px;margin-top:10px;}
 video{width:300px;height:200px;background:#000;}
-button{margin:5px;}
+button,input{margin:5px;}
 </style>
 </head>
 <body>
-<h2>Omegle Clone</h2>
-<button id="start">Start Chat</button>
-<button id="next">Next</button>
+<h2>Omegle Clone – Friend Chat</h2>
+
+<input id="roomCode" placeholder="Enter room code">
+<button id="join">Join Room</button>
 <div id="status"></div>
 
 <div id="chat"></div>
@@ -30,26 +31,35 @@ button{margin:5px;}
 const socket = io();
 let room = null;
 
-// Chat UI
+// UI functions
 const status = document.getElementById('status');
 const chat = document.getElementById('chat');
 function append(msg){ chat.innerHTML += '<div>'+msg+'</div>'; chat.scrollTop = chat.scrollHeight; }
 
-document.getElementById('start').onclick = () => { socket.emit('find_partner'); status.textContent='Searching...'; }
-document.getElementById('next').onclick = () => { location.reload(); }
+// Join room
+document.getElementById('join').onclick = () => {
+  const code = document.getElementById('roomCode').value.trim();
+  if(code){
+    room = code;
+    socket.emit('join_room', code);
+    status.textContent = 'Joining room...';
+  }
+};
+
+// Send text messages
 document.getElementById('send').onclick = () => {
   const t = document.getElementById('msg').value;
   if(room && t){ socket.emit('message',{room,text:t}); append('Me: '+t); document.getElementById('msg').value=''; }
-}
+};
 
 // Socket events
-socket.on('waiting', () => status.textContent='Waiting for partner...');
+socket.on('waiting', () => status.textContent='Waiting for friend to join...');
 socket.on('paired', ({room: r}) => {
   room = r;
-  status.textContent='Paired! Room: '+room;
+  status.textContent='Friend connected! Room: '+room;
   startVideoChat();
 });
-socket.on('message', ({from,text}) => append('Stranger: '+text));
+socket.on('message', ({from,text}) => append('Friend: '+text));
 
 // ===== WebRTC video =====
 let localStream, peerConn;
@@ -66,7 +76,7 @@ async function startVideoChat(){
   peerConn.onicecandidate = e => { if(e.candidate) socket.emit('signal',{room,data:{candidate:e.candidate}}); }
 
   // Offer/answer logic
-  if(socket.id === room.split('-')[1]){
+  if(socket.id === room.split('-')[1] || room.split('-')[1] === undefined){
     const offer = await peerConn.createOffer();
     await peerConn.setLocalDescription(offer);
     socket.emit('signal',{room,data:{sdp:offer}});

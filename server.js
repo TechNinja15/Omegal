@@ -8,12 +8,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-let waitingUser = null; // queue for pairing
+const rooms = {}; // { roomID: [socket1, socket2] }
 
 // Serve frontend
 app.get('/', (req, res) => {
   const filePath = path.join(__dirname, 'client.html');
-  console.log('Serving file:', filePath);
   res.sendFile(filePath);
 });
 
@@ -21,19 +20,18 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  socket.on('find_partner', () => {
-    if (waitingUser && waitingUser !== socket.id) {
-      // pair users
-      const room = 'room-' + socket.id + '-' + waitingUser;
-      socket.join(room);
-      io.to(waitingUser).socketsJoin(room);
+  // Join room by code
+  socket.on('join_room', (roomID) => {
+    if (!rooms[roomID]) rooms[roomID] = [];
+    rooms[roomID].push(socket.id);
+    socket.join(roomID);
 
-      io.to(room).emit('paired', { room });
-      waitingUser = null;
-      console.log('Paired users in room:', room);
+    if (rooms[roomID].length === 2) {
+      io.to(roomID).emit('paired', { room: roomID });
+      console.log(`Room ${roomID} is ready`);
     } else {
-      waitingUser = socket.id;
       socket.emit('waiting');
+      console.log(`Waiting for friend in room ${roomID}`);
     }
   });
 
@@ -48,11 +46,14 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    if (waitingUser === socket.id) waitingUser = null;
+    // Remove socket from rooms
+    for (const roomID in rooms) {
+      rooms[roomID] = rooms[roomID].filter(id => id !== socket.id);
+      if (rooms[roomID].length === 0) delete rooms[roomID];
+    }
     console.log('User disconnected:', socket.id);
   });
 });
 
-// Instead of hardcoding 3000:
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
