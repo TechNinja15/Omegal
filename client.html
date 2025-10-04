@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Omegle Clone</title>
+<style>
+body{font-family:sans-serif;margin:20px;}
+#chat{border:1px solid #ccc;height:200px;overflow:auto;padding:5px;}
+#video-container{display:flex;gap:10px;margin-top:10px;}
+video{width:300px;height:200px;background:#000;}
+</style>
+</head>
+<body>
+<h2>Omegle Clone</h2>
+<button id="start">Start Chat</button>
+<button id="next">Next</button>
+<div id="status"></div>
+
+<div id="chat"></div>
+<input id="msg" placeholder="Type message..."><button id="send">Send</button>
+
+<div id="video-container">
+  <video id="localVideo" autoplay muted></video>
+  <video id="remoteVideo" autoplay></video>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let room = null;
+
+// text chat UI
+const status = document.getElementById('status');
+const chat = document.getElementById('chat');
+function append(msg){ chat.innerHTML += '<div>'+msg+'</div>'; chat.scrollTop = chat.scrollHeight; }
+
+document.getElementById('start').onclick = () => { socket.emit('find_partner'); status.textContent='Searching...'; }
+document.getElementById('next').onclick = () => { location.reload(); }
+document.getElementById('send').onclick = () => {
+  const t = document.getElementById('msg').value;
+  if(room && t){ socket.emit('message',{room,text:t}); append('Me: '+t); document.getElementById('msg').value=''; }
+}
+
+// socket events
+socket.on('waiting', () => status.textContent='Waiting for partner...');
+socket.on('paired', ({room: r}) => {
+  room = r;
+  status.textContent='Paired! Room: '+room;
+  startVideoChat();
+});
+socket.on('message', ({from,text}) => append('Stranger: '+text));
+
+// ===== WebRTC video setup =====
+let localStream, peerConn;
+const localVideo = document.getElementById('localVideo');
+const remoteVideo = document.getElementById('remoteVideo');
+
+async function startVideoChat(){
+  localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+  localVideo.srcObject = localStream;
+
+  peerConn = new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+  localStream.getTracks().forEach(track => peerConn.addTrack(track, localStream));
+  peerConn.ontrack = e => { remoteVideo.srcObject = e.streams[0]; }
+  peerConn.onicecandidate = e => { if(e.candidate) socket.emit('signal',{room,data:{candidate:e.candidate}}); }
+
+  // offer/answer signaling
+  if(socket.id === room.split('-')[1]){
+    const offer = await peerConn.createOffer();
+    await peerConn.setLocalDescription(offer);
+    socket.emit('signal',{room,data:{sdp:offer}});
+  }
+}
+
+// receive signaling data
+socket.on('signal', async (data) => {
+  if(data.sdp){
+    await peerConn.setRemoteDescription(data.sdp);
+    if(data.sdp.type==='offer'){
+      const answer = await peerConn.createAnswer();
+      await peerConn.setLocalDescription(answer);
+      socket.emit('signal',{room,data:{sdp:answer}});
+    }
+  }
+  if(data.candidate) peerConn.addIceCandidate(data.candidate);
+});
+</script>
+</body>
+</html>
