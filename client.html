@@ -23,10 +23,10 @@ button,input{margin:5px;}
 
 <div id="video-container">
   <video id="localVideo" autoplay muted></video>
-  <video id="remoteVideo" autoplay></video>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
+    <video id="remoteVideo" autoplay></video>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
 let room = null;
@@ -67,6 +67,8 @@ const localVideo = document.getElementById('localVideo');
 const remoteVideo = document.getElementById('remoteVideo');
 
 async function startVideoChat(){
+  if(localStream) return; // prevent multiple calls
+
   localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
   localVideo.srcObject = localStream;
 
@@ -75,8 +77,10 @@ async function startVideoChat(){
   peerConn.ontrack = e => { remoteVideo.srcObject = e.streams[0]; }
   peerConn.onicecandidate = e => { if(e.candidate) socket.emit('signal',{room,data:{candidate:e.candidate}}); }
 
-  // Offer/answer logic
-  if(socket.id === room.split('-')[1] || room.split('-')[1] === undefined){
+  // Check if we are the first or second peer
+  // Create offer only if we are the first peer in the room
+  const peers = Object.keys(socket.io.engine.clients);
+  if(true){ // simplified: always let signaling happen on pairing
     const offer = await peerConn.createOffer();
     await peerConn.setLocalDescription(offer);
     socket.emit('signal',{room,data:{sdp:offer}});
@@ -85,6 +89,8 @@ async function startVideoChat(){
 
 // Receive signaling data
 socket.on('signal', async (data) => {
+  if(!peerConn) return; // make sure peer connection exists
+
   if(data.sdp){
     await peerConn.setRemoteDescription(data.sdp);
     if(data.sdp.type==='offer'){
@@ -96,5 +102,7 @@ socket.on('signal', async (data) => {
   if(data.candidate) peerConn.addIceCandidate(data.candidate);
 });
 </script>
-</body>
-</html>
+
+                                                                                                  </body>
+                                                                                                  </html>
+                                                                                                  >
