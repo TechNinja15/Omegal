@@ -23,10 +23,10 @@ button,input{margin:5px;}
 
 <div id="video-container">
   <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
-    </div>
-    
-    <script src="/socket.io/socket.io.js"></script>
+  <video id="remoteVideo" autoplay></video>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
 let room = null;
@@ -69,27 +69,20 @@ const remoteVideo = document.getElementById('remoteVideo');
 async function startVideoChat(){
   if(localStream) return; // prevent multiple calls
 
+  // Get camera/mic
   localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
   localVideo.srcObject = localStream;
 
+  // Create peer connection
   peerConn = new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
   localStream.getTracks().forEach(track => peerConn.addTrack(track, localStream));
   peerConn.ontrack = e => { remoteVideo.srcObject = e.streams[0]; }
   peerConn.onicecandidate = e => { if(e.candidate) socket.emit('signal',{room,data:{candidate:e.candidate}}); }
-
-  // Check if we are the first or second peer
-  // Create offer only if we are the first peer in the room
-  const peers = Object.keys(socket.io.engine.clients);
-  if(true){ // simplified: always let signaling happen on pairing
-    const offer = await peerConn.createOffer();
-    await peerConn.setLocalDescription(offer);
-    socket.emit('signal',{room,data:{sdp:offer}});
-  }
 }
 
-// Receive signaling data
+// Handle signaling
 socket.on('signal', async (data) => {
-  if(!peerConn) return; // make sure peer connection exists
+  if(!peerConn) return;
 
   if(data.sdp){
     await peerConn.setRemoteDescription(data.sdp);
@@ -101,8 +94,15 @@ socket.on('signal', async (data) => {
   }
   if(data.candidate) peerConn.addIceCandidate(data.candidate);
 });
-</script>
 
-                                                                                                  </body>
-                                                                                                  </html>
-                                                                                                  >
+// After getting paired, one peer creates offer
+socket.on('paired', async () => {
+  if(!peerConn.localDescription){
+    const offer = await peerConn.createOffer();
+    await peerConn.setLocalDescription(offer);
+    socket.emit('signal',{room,data:{sdp:offer}});
+  }
+});
+</script>
+</body>
+</html>
