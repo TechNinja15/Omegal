@@ -60,3 +60,11 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
+const peerConn = new RTCPeerConnection({
+  iceServers: [
+    { urls: "https://omegal-8kst.onrender.com/" }, // public STUN
+    // Optional TURN server for NAT issues:
+    // { urls: "turn:your-turn-server.com", username: "user", credential: "pass" }
+  ]
+});
