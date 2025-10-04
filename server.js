@@ -2,18 +2,22 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-let waitingUser = null; // single waiting user for pairing
+let waitingUser = null; // queue for pairing
 
-// serve frontend
+// Serve frontend
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/client.html');
+  const filePath = path.join(__dirname, 'client.html');
+  console.log('Serving file:', filePath);
+  res.sendFile(filePath);
 });
 
+// Socket.io connection
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
@@ -25,7 +29,7 @@ io.on('connection', (socket) => {
       io.to(waitingUser).socketsJoin(room);
 
       io.to(room).emit('paired', { room });
-      waitingUser = null; // reset
+      waitingUser = null;
       console.log('Paired users in room:', room);
     } else {
       waitingUser = socket.id;
@@ -33,12 +37,12 @@ io.on('connection', (socket) => {
     }
   });
 
-  // text chat
+  // Text chat
   socket.on('message', ({ room, text }) => {
     socket.to(room).emit('message', { from: socket.id, text });
   });
 
-  // signaling for video chat (WebRTC)
+  // WebRTC signaling
   socket.on('signal', ({ room, data }) => {
     socket.to(room).emit('signal', data);
   });

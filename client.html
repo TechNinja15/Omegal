@@ -5,9 +5,10 @@
 <title>Omegle Clone</title>
 <style>
 body{font-family:sans-serif;margin:20px;}
-#chat{border:1px solid #ccc;height:200px;overflow:auto;padding:5px;}
+#chat{border:1px solid #ccc;height:200px;overflow:auto;padding:5px;margin-top:10px;}
 #video-container{display:flex;gap:10px;margin-top:10px;}
 video{width:300px;height:200px;background:#000;}
+button{margin:5px;}
 </style>
 </head>
 <body>
@@ -29,7 +30,7 @@ video{width:300px;height:200px;background:#000;}
 const socket = io();
 let room = null;
 
-// text chat UI
+// Chat UI
 const status = document.getElementById('status');
 const chat = document.getElementById('chat');
 function append(msg){ chat.innerHTML += '<div>'+msg+'</div>'; chat.scrollTop = chat.scrollHeight; }
@@ -41,7 +42,7 @@ document.getElementById('send').onclick = () => {
   if(room && t){ socket.emit('message',{room,text:t}); append('Me: '+t); document.getElementById('msg').value=''; }
 }
 
-// socket events
+// Socket events
 socket.on('waiting', () => status.textContent='Waiting for partner...');
 socket.on('paired', ({room: r}) => {
   room = r;
@@ -50,7 +51,7 @@ socket.on('paired', ({room: r}) => {
 });
 socket.on('message', ({from,text}) => append('Stranger: '+text));
 
-// ===== WebRTC video setup =====
+// ===== WebRTC video =====
 let localStream, peerConn;
 const localVideo = document.getElementById('localVideo');
 const remoteVideo = document.getElementById('remoteVideo');
@@ -64,7 +65,7 @@ async function startVideoChat(){
   peerConn.ontrack = e => { remoteVideo.srcObject = e.streams[0]; }
   peerConn.onicecandidate = e => { if(e.candidate) socket.emit('signal',{room,data:{candidate:e.candidate}}); }
 
-  // offer/answer signaling
+  // Offer/answer logic
   if(socket.id === room.split('-')[1]){
     const offer = await peerConn.createOffer();
     await peerConn.setLocalDescription(offer);
@@ -72,7 +73,7 @@ async function startVideoChat(){
   }
 }
 
-// receive signaling data
+// Receive signaling data
 socket.on('signal', async (data) => {
   if(data.sdp){
     await peerConn.setRemoteDescription(data.sdp);
