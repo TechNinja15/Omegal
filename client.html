@@ -1,109 +1,213 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta charset="utf-8">
-<title>Omegle Clone – Friend Chat</title>
-<style>
-body{font-family:sans-serif;margin:20px;}
-#chat{border:1px solid #ccc;height:200px;overflow:auto;padding:5px;margin-top:10px;}
-#video-container{display:flex;gap:10px;margin-top:10px;}
-video{width:300px;height:200px;background:#000;}
-button,input{margin:5px;}
-</style>
-</head>
-<body>
-<h2>Omegle Clone – Friend Chat</h2>
-
-<input id="roomCode" placeholder="Enter room code">
-<button id="join">Join Room</button>
-<div id="status"></div>
-
-<div id="chat"></div>
-<input id="msg" placeholder="Type message..."><button id="send">Send</button>
-
-<div id="video-container">
-  <video id="localVideo" autoplay muted></video>
-  <video id="remoteVideo" autoplay></video>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
-let room = null;
-
-// UI functions
-const status = document.getElementById('status');
-const chat = document.getElementById('chat');
-function append(msg){ chat.innerHTML += '<div>'+msg+'</div>'; chat.scrollTop = chat.scrollHeight; }
-
-// Join room
-document.getElementById('join').onclick = () => {
-  const code = document.getElementById('roomCode').value.trim();
-  if(code){
-    room = code;
-    socket.emit('join_room', code);
-    status.textContent = 'Joining room...';
-  }
-};
-
-// Send text messages
-document.getElementById('send').onclick = () => {
-  const t = document.getElementById('msg').value;
-  if(room && t){ socket.emit('message',{room,text:t}); append('Me: '+t); document.getElementById('msg').value=''; }
-};
-
-// Socket events
-socket.on('waiting', () => status.textContent='Waiting for friend to join...');
-socket.on('paired', ({room: r}) => {
-  room = r;
-  status.textContent='Friend connected! Room: '+room;
-  startVideoChat();
-});
-socket.on('message', ({from,text}) => append('Friend: '+text));
-
-// ===== WebRTC video =====
-let localStream, peerConn;
-const localVideo = document.getElementById('localVideo');
-const remoteVideo = document.getElementById('remoteVideo');
-
-async function startVideoChat(){
-  if(localStream) return; // prevent multiple calls
-
-  // Get camera/mic
-  localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-  localVideo.srcObject = localStream;
-
-  // Create peer connection
-  peerConn = new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
-  localStream.getTracks().forEach(track => peerConn.addTrack(track, localStream));
-  peerConn.ontrack = e => { remoteVideo.srcObject = e.streams[0]; }
-  peerConn.onicecandidate = e => { if(e.candidate) socket.emit('signal',{room,data:{candidate:e.candidate}}); }
-}
-
-// Handle signaling
-socket.on('signal', async (data) => {
-  if(!peerConn) return;
-
-  if(data.sdp){
-    await peerConn.setRemoteDescription(data.sdp);
-    if(data.sdp.type==='offer'){
-      const answer = await peerConn.createAnswer();
-      await peerConn.setLocalDescription(answer);
-      socket.emit('signal',{room,data:{sdp:answer}});
+  <meta charset="utf-8">
+  <title>Omegle Clone – Friend Chat</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
     }
-  }
-  if(data.candidate) peerConn.addIceCandidate(data.candidate);
-});
 
-// After getting paired, one peer creates offer
-socket.on('paired', async () => {
-  if(!peerConn.localDescription){
-    const offer = await peerConn.createOffer();
-    await peerConn.setLocalDescription(offer);
-    socket.emit('signal',{room,data:{sdp:offer}});
-  }
-});
+    #chat {
+      border: 1px solid #ccc;
+      height: 200px;
+      overflow: auto;
+      padding: 5px;
+      margin-top: 10px;
+    }
 
-</script>
+    #video-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    video {
+      width: 300px;
+      height: 200px;
+      background: #000;
+    }
+
+    button,
+    input {
+      margin: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Omegle Clone – Friend Chat</h2>
+
+  <input id="roomCode" placeholder="Enter room code">
+  <button id="join">Join Room</button>
+  <div id="status"></div>
+
+  <div id="chat"></div>
+  <input id="msg" placeholder="Type message..."><button id="send">Send</button>
+  <div id="video-container">
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let room = null;
+    let localStream = null;
+    let peerConn = null;
+    const rtcConfig = {
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    };
+
+    // UI references
+    const status = document.getElementById('status');
+    const chat = document.getElementById('chat');
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+
+    // UI functions
+    function append(msg) { chat.innerHTML += '<div>' + msg + '</div>'; chat.scrollTop = chat.scrollHeight; }
+
+    // Join room
+    document.getElementById('join').onclick = () => {
+      const code = document.getElementById('roomCode').value.trim();
+      if (code) {
+        room = code;
+        socket.emit('join_room', code);
+        status.textContent = 'Joining room...';
+      }
+    };
+
+    // Send text messages
+    document.getElementById('send').onclick = () => {
+      const t = document.getElementById('msg').value;
+      if (room && t) { socket.emit('message', { room, text: t }); append('Me: ' + t); document.getElementById('msg').value = ''; }
+    };
+
+    // Socket events
+    socket.on('waiting', () => status.textContent = 'Waiting for friend to join...');
+
+    socket.on('paired', async ({ room: r, initiator }) => {
+      room = r;
+      status.textContent = 'Friend connected! Room: ' + room;
+      const isInitiator = socket.id === initiator;
+      console.log('Paired. Am I initiator?', isInitiator);
+      await startVideoChat(isInitiator);
+    });
+
+    socket.on('message', ({ from, text }) => append('Friend: ' + text));
+
+    let signalQueue = [];
+
+    socket.on('signal', async (data) => {
+      if (!peerConn) {
+        console.log('PeerConn not ready, queuing signal:', data.type || 'candidate');
+        signalQueue.push(data);
+        return;
+      }
+      await handleSignal(data);
+    });
+
+    async function handleSignal(data) {
+      try {
+        if (data.sdp) {
+          console.log('Received SDP:', data.sdp.type);
+          await peerConn.setRemoteDescription(new RTCSessionDescription(data.sdp));
+
+          // Process queued candidates that were waiting for remote description
+          while (candidateQueue.length > 0) {
+            const candidate = candidateQueue.shift();
+            console.log('Adding queued candidate');
+            await peerConn.addIceCandidate(candidate);
+          }
+
+          if (data.sdp.type === 'offer') {
+            const answer = await peerConn.createAnswer();
+            await peerConn.setLocalDescription(answer);
+            socket.emit('signal', { room, data: { sdp: answer } });
+            console.log('Sent Answer');
+          }
+        }
+        if (data.candidate) {
+          const candidate = new RTCIceCandidate(data.candidate);
+          if (peerConn.remoteDescription && peerConn.remoteDescription.type) {
+            console.log('Received Candidate');
+            await peerConn.addIceCandidate(candidate);
+          } else {
+            console.log('Queueing Candidate (waiting for SDP)');
+            candidateQueue.push(candidate);
+          }
+        }
+      } catch (err) {
+        console.error('Error handling signal:', err);
+      }
+    }
+
+    let candidateQueue = [];
+
+    // WebRTC functions
+    async function startVideoChat(isInitiator) {
+      // 1. Get User Media (Camera/Mic)
+      try {
+        if (!localStream) {
+          localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          localVideo.srcObject = localStream;
+        }
+      } catch (err) {
+        console.error('Error accessing camera/mic:', err);
+        status.textContent = 'Camera/Mic blocked. Joining as viewer...';
+        // Proceed without local stream
+      }
+
+      try {
+        if (peerConn) peerConn.close(); // Reset if exists
+
+        peerConn = new RTCPeerConnection(rtcConfig);
+
+        // Add local tracks IF we have them
+        if (localStream) {
+          localStream.getTracks().forEach(track => peerConn.addTrack(track, localStream));
+        }
+
+        // Handle remote tracks
+        peerConn.ontrack = e => {
+          console.log('Received remote track');
+          if (remoteVideo.srcObject !== e.streams[0]) {
+            remoteVideo.srcObject = e.streams[0];
+          }
+        };
+
+        // Handle ICE candidates
+        peerConn.onicecandidate = e => {
+          if (e.candidate) {
+            socket.emit('signal', { room, data: { candidate: e.candidate } });
+          }
+        };
+
+        // Process any signals that arrived while we were getting media/initializing
+        while (signalQueue.length > 0) {
+          const data = signalQueue.shift();
+          console.log('Processing early queued signal');
+          await handleSignal(data);
+        }
+
+        // If initiator, create offer
+        if (isInitiator) {
+          console.log('Creating Offer');
+          // If we have no local tracks, we should arguably create an offer that indicates we want to receive.
+          // Default createOffer behavior is usually fine, but we might want offerToReceiveVideo: true
+          const offer = await peerConn.createOffer({ offerToReceiveVideo: true, offerToReceiveAudio: true });
+          await peerConn.setLocalDescription(offer);
+          socket.emit('signal', { room, data: { sdp: offer } });
+        }
+      } catch (err) {
+        console.error('Error starting connection:', err);
+        status.textContent = 'Connection error: ' + err.message;
+      }
+    }
+  </script>
 </body>
+
 </html>

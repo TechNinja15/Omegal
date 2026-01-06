@@ -30,7 +30,8 @@ io.on('connection', (socket) => {
 
     if (rooms[roomID].length === 2) {
       // Notify both users they are paired
-      io.to(roomID).emit('paired', { room: roomID });
+      // The socket that just joined triggers the pair, so they can be the initiator
+      io.to(roomID).emit('paired', { room: roomID, initiator: socket.id });
       console.log(`Room ${roomID} is ready`);
     } else {
       socket.emit('waiting');
