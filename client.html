@@ -3,52 +3,225 @@
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Omegle Clone – Friend Chat</title>
   <style>
     body {
-      font-family: sans-serif;
-      margin: 20px;
+      background-color: #000;
+      color: #fff;
+      font-family: 'Courier New', Courier, monospace;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h2 {
+      color: #ff00ff;
+      text-shadow: 0 0 10px #ff00ff;
+      margin-top: 20px;
+      font-size: 1.5rem;
+    }
+
+    #main-container {
+      width: 90%;
+      max-width: 800px;
+      background: #111;
+      border: 2px solid #ff00ff;
+      box-shadow: 0 0 20px #ff00ff;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    #control-panel {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    input {
+      background: #222;
+      border: 1px solid #ff00ff;
+      color: #fff;
+      padding: 10px;
+      flex-grow: 1;
+      outline: none;
+      min-width: 0;
+    }
+
+    button {
+      background: #000;
+      color: #ff00ff;
+      border: 1px solid #ff00ff;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      background: #ff00ff;
+      color: #000;
+      box-shadow: 0 0 15px #ff00ff;
+    }
+
+    button.active {
+      background: #ff00ff;
+      color: #000;
+    }
+
+    #status {
+      color: #0ff;
+      margin-bottom: 10px;
+      text-shadow: 0 0 5px #0ff;
+      font-size: 0.9rem;
     }
 
     #chat {
-      border: 1px solid #ccc;
-      height: 200px;
+      border: 1px solid #333;
+      height: 300px;
       overflow: auto;
-      padding: 5px;
-      margin-top: 10px;
+      padding: 10px;
+      background: #000;
+      margin-bottom: 10px;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    #chat div {
+      margin-bottom: 5px;
+      border-bottom: 1px solid #222;
+      padding-bottom: 2px;
     }
 
     #video-container {
       display: flex;
-      gap: 10px;
-      margin-top: 10px;
+      gap: 15px;
+      margin-top: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
     video {
-      width: 300px;
-      height: 200px;
-      background: #000;
+      width: 100%;
+      max-width: 350px;
+      height: auto;
+      background: #222;
+      border: 2px solid #0ff;
+      box-shadow: 0 0 10px #0ff;
+      border-radius: 5px;
     }
 
-    button,
-    input {
-      margin: 5px;
+    #media-controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .control-btn {
+      border-color: #0ff;
+      color: #0ff;
+      flex: 1 1 auto;
+      max-width: 200px;
+    }
+
+    .control-btn:hover {
+      background: #0ff;
+      color: #000;
+      box-shadow: 0 0 15px #0ff;
+    }
+
+    .control-btn.off {
+      border-color: #ff0000;
+      color: #ff0000;
+    }
+
+    .control-btn.off:hover {
+      background: #ff0000;
+      color: #000;
+      box-shadow: 0 0 15px #ff0000;
+    }
+
+    /* Mobile Responsive Styles */
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+
+      #main-container {
+        width: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+        /* Ensure padding doesn't affect width */
+      }
+
+      #video-container {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      video {
+        max-width: 100%;
+        /* Full width on mobile */
+        height: auto;
+      }
+
+      button {
+        padding: 12px;
+        /* Larger touch target */
+        font-size: 0.9rem;
+      }
+
+      #control-panel {
+        flex-direction: column;
+      }
+
+      #media-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .control-btn {
+        max-width: none;
+      }
     }
   </style>
 </head>
 
 <body>
-  <h2>Omegle Clone – Friend Chat</h2>
 
-  <input id="roomCode" placeholder="Enter room code">
-  <button id="join">Join Room</button>
-  <div id="status"></div>
+  <h2>NEON CHAT</h2>
 
-  <div id="chat"></div>
-  <input id="msg" placeholder="Type message..."><button id="send">Send</button>
-  <div id="video-container">
-    <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
+  <div id="main-container">
+    <div id="control-panel">
+      <input id="roomCode" placeholder="ENTER ROOM CODE">
+      <button id="join">JOIN ROOM</button>
+    </div>
+
+    <div id="status">STATUS: DISCONNECTED</div>
+
+    <div id="chat"></div>
+    <div id="control-panel">
+      <input id="msg" placeholder="TYPE MESSAGE...">
+      <button id="send">SEND</button>
+    </div>
+
+    <div id="video-container">
+      <video id="localVideo" autoplay muted playsinline></video>
+      <video id="remoteVideo" autoplay playsinline></video>
+    </div>
+
+    <div id="media-controls" style="display:none;">
+      <button id="btn-mic" class="control-btn">MUTE MIC</button>
+      <button id="btn-cam" class="control-btn">TURN OFF CAM</button>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -66,6 +239,9 @@
     const chat = document.getElementById('chat');
     const localVideo = document.getElementById('localVideo');
     const remoteVideo = document.getElementById('remoteVideo');
+    const mediaControls = document.getElementById('media-controls');
+    const btnMic = document.getElementById('btn-mic');
+    const btnCam = document.getElementById('btn-cam');
 
     // UI functions
     function append(msg) { chat.innerHTML += '<div>' + msg + '</div>'; chat.scrollTop = chat.scrollHeight; }
@@ -76,28 +252,36 @@
       if (code) {
         room = code;
         socket.emit('join_room', code);
-        status.textContent = 'Joining room...';
+        status.textContent = 'STATUS: JOINING ROOM...';
       }
     };
 
     // Send text messages
     document.getElementById('send').onclick = () => {
       const t = document.getElementById('msg').value;
-      if (room && t) { socket.emit('message', { room, text: t }); append('Me: ' + t); document.getElementById('msg').value = ''; }
+      if (room && t) { socket.emit('message', { room, text: t }); append('<span style="color:#ff00ff">ME:</span> ' + t); document.getElementById('msg').value = ''; }
     };
 
+    // Enter key for message
+    document.getElementById('msg').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        document.getElementById('send').click();
+      }
+    });
+
+
     // Socket events
-    socket.on('waiting', () => status.textContent = 'Waiting for friend to join...');
+    socket.on('waiting', () => status.textContent = 'STATUS: WAITING FOR FRIEND...');
 
     socket.on('paired', async ({ room: r, initiator }) => {
       room = r;
-      status.textContent = 'Friend connected! Room: ' + room;
+      status.textContent = 'STATUS: CONNECTED! ROOM: ' + room;
       const isInitiator = socket.id === initiator;
       console.log('Paired. Am I initiator?', isInitiator);
       await startVideoChat(isInitiator);
     });
 
-    socket.on('message', ({ from, text }) => append('Friend: ' + text));
+    socket.on('message', ({ from, text }) => append('<span style="color:#0ff">FRIEND:</span> ' + text));
 
     let signalQueue = [];
 
@@ -154,10 +338,11 @@
         if (!localStream) {
           localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
           localVideo.srcObject = localStream;
+          mediaControls.style.display = 'flex'; // Show controls
         }
       } catch (err) {
         console.error('Error accessing camera/mic:', err);
-        status.textContent = 'Camera/Mic blocked. Joining as viewer...';
+        status.textContent = 'STATUS: CAMERA/MIC BLOCKED. JOINING AS VIEWER...';
         // Proceed without local stream
       }
 
@@ -196,17 +381,49 @@
         // If initiator, create offer
         if (isInitiator) {
           console.log('Creating Offer');
-          // If we have no local tracks, we should arguably create an offer that indicates we want to receive.
-          // Default createOffer behavior is usually fine, but we might want offerToReceiveVideo: true
+          // offerToReceiveVideo/Audio ensures we ask for streams even if we don't send one
           const offer = await peerConn.createOffer({ offerToReceiveVideo: true, offerToReceiveAudio: true });
           await peerConn.setLocalDescription(offer);
           socket.emit('signal', { room, data: { sdp: offer } });
         }
       } catch (err) {
         console.error('Error starting connection:', err);
-        status.textContent = 'Connection error: ' + err.message;
+        status.textContent = 'STATUS: CONNECTION ERROR: ' + err.message;
       }
     }
+
+    // Media Control Logic
+    btnMic.onclick = () => {
+      if (localStream) {
+        const audioTrack = localStream.getAudioTracks()[0];
+        if (audioTrack) {
+          audioTrack.enabled = !audioTrack.enabled;
+          if (audioTrack.enabled) {
+            btnMic.textContent = 'MUTE MIC';
+            btnMic.classList.remove('off');
+          } else {
+            btnMic.textContent = 'UNMUTE MIC';
+            btnMic.classList.add('off');
+          }
+        }
+      }
+    };
+
+    btnCam.onclick = () => {
+      if (localStream) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.enabled = !videoTrack.enabled;
+          if (videoTrack.enabled) {
+            btnCam.textContent = 'TURN OFF CAM';
+            btnCam.classList.remove('off');
+          } else {
+            btnCam.textContent = 'TURN ON CAM';
+            btnCam.classList.add('off');
+          }
+        }
+      }
+    };
   </script>
 </body>
 
