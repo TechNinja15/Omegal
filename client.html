@@ -289,6 +289,190 @@
         font-size: 0.9rem;
       }
     }
+
+    /* Movie Mode Styles (Activity) */
+    body.movie-mode #chat-area {
+      display: none;
+      /* Hide default chat */
+    }
+
+    body.movie-mode #main-container {
+      width: 100vw;
+      height: 100vh;
+      max-width: 100vw;
+      margin: 0;
+      padding: 0;
+    }
+
+    body.movie-mode #page-call {
+      padding: 0;
+    }
+
+    body.movie-mode h2,
+    body.movie-mode #status {
+      display: none;
+      /* Clean look */
+    }
+
+    body.movie-mode #video-area {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+    }
+
+    body.movie-mode #video-container {
+      height: 100%;
+      justify-content: center;
+    }
+
+    /* HOST VIEW: ActivityVideo is Main, RemoteVideo is Bubble */
+    body.movie-mode.host-view #activityVideo {
+      display: block !important;
+      height: 90vh !important;
+      width: 90vw !important;
+      max-width: none;
+      object-fit: contain;
+      border: none;
+    }
+
+    body.movie-mode.host-view #localVideo,
+    body.movie-mode.host-view #remoteVideo {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid #ff00ff;
+      z-index: 10;
+      right: 20px;
+    }
+
+    body.movie-mode.host-view #localVideo {
+      top: 20px;
+    }
+
+    body.movie-mode.host-view #remoteVideo {
+      top: 150px;
+    }
+
+    /* PEER VIEW: RemoteVideo (The Movie) is Main, LocalVideo is Bubble */
+    body.movie-mode.peer-view #remoteVideo {
+      width: 90vw !important;
+      height: 90vh !important;
+      max-width: none;
+      object-fit: contain;
+      position: static;
+      /* Reset from bubble styles */
+      border-radius: 0;
+      border: none;
+    }
+
+    body.movie-mode.peer-view #localVideo {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid #ff00ff;
+      z-index: 10;
+      right: 20px;
+      top: 20px;
+    }
+
+    /* Hide ActivityVideo for Peer */
+    body.movie-mode.peer-view #activityVideo {
+      display: none;
+    }
+
+    /* Floating Chat Overlay */
+    #chat-overlay {
+      position: fixed;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 300px;
+      /* ... existing styles ... */
+      background: rgba(0, 0, 0, 0.8);
+      border-left: 1px solid #ff00ff;
+      display: none;
+      /* Hidden by default */
+      flex-direction: column;
+      z-index: 20;
+      backdrop-filter: blur(5px);
+    }
+
+    #video-status-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3rem;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 20px 40px;
+      border-radius: 10px;
+      pointer-events: none;
+      /* Let clicks pass through */
+      display: none;
+      z-index: 15;
+      border: 2px solid #0ff;
+      text-shadow: 0 0 10px #0ff;
+    }
+
+    #chat-toggle-btn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #ff00ff;
+      color: #000;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 30;
+      display: none;
+      font-size: 0.8rem;
+      /* Smaller */
+      /* Only in movie mode */
+    }
+
+    /* Custom Video Controls */
+    #custom-controls {
+      position: fixed;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 20px;
+      border-radius: 30px;
+      display: flex;
+      gap: 15px;
+      z-index: 30;
+      border: 1px solid #ff00ff;
+      display: none;
+      /* Only in movie mode */
+    }
+
+    #custom-controls button {
+      background: transparent;
+      color: #fff;
+      border: 1px solid #fff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #custom-controls button:hover {
+      background: #ff00ff;
+      color: #000;
+      border-color: #ff00ff;
+    }
   </style>
 </head>
 
@@ -323,12 +507,26 @@
     <div id="main-container">
       <div id="video-area">
         <div id="video-container">
+          <div id="video-status-overlay"></div>
           <video id="localVideo" autoplay muted playsinline></video>
           <video id="remoteVideo" autoplay playsinline></video>
+          <!-- Hidden video player for file streaming -->
+          <video id="activityVideo" style="display:none;" playsinline loop></video>
+
+          <!-- Custom Controls Overlay -->
+          <div id="custom-controls">
+            <button id="btn-skip-back">-10s</button>
+            <button id="btn-play-pause">⏯</button>
+            <button id="btn-skip-fwd">+10s</button>
+          </div>
         </div>
         <div id="media-controls">
           <button id="btn-mic" class="control-btn">MUTE MIC</button>
           <button id="btn-cam" class="control-btn">TURN OFF CAM</button>
+          <button id="btn-activity" class="control-btn">ACTIVITY</button>
+          <button id="btn-fullscreen" class="control-btn">FULLSCREEN</button>
+          <!-- Hidden file input -->
+          <input type="file" id="fileInput" accept="video/*" style="display: none;">
         </div>
       </div>
 
@@ -339,6 +537,19 @@
           <button id="send">SEND</button>
         </div>
       </div>
+    </div>
+
+    <!-- Floating Elements for Movie Mode -->
+    <button id="chat-toggle-btn">💬 Chat</button>
+    <div id="chat-overlay">
+      <!-- Chat will be moved here via JS or valid CSS selector -->
+      <div id="chat-header"
+        style="padding: 10px; border-bottom: 1px solid #ff00ff; display:flex; justify-content:space-between;">
+        <span>LIVE CHAT</span>
+        <button id="close-chat"
+          style="width:auto; padding:5px; border:none; background:transparent; color:#ff00ff;">X</button>
+      </div>
+      <div id="floating-chat-container" style="flex:1; overflow:hidden; display:flex; flex-direction:column;"></div>
     </div>
   </div>
 
@@ -586,6 +797,271 @@
             btnCam.classList.add('off');
           }
         }
+      }
+    };
+
+    // Video Streaming Logic
+    const btnActivity = document.getElementById('btn-activity');
+    const fileInput = document.getElementById('fileInput');
+    const activityVideo = document.getElementById('activityVideo');
+    const btnFullscreen = document.getElementById('btn-fullscreen');
+
+    let isStreaming = false;
+
+    // Movie Mode / Chat Logic
+    const chatOverlay = document.getElementById('chat-overlay');
+    const statusOverlay = document.getElementById('video-status-overlay');
+    const chatToggleBtn = document.getElementById('chat-toggle-btn');
+    const floatingChatContainer = document.getElementById('floating-chat-container');
+    const chatAreaOriginal = document.getElementById('chat-area');
+    const chatContent = document.getElementById('chat');
+    const inputArea = document.getElementById('input-area');
+    const closeChatBtn = document.getElementById('close-chat');
+    const customControls = document.getElementById('custom-controls');
+
+    // Capture Activity Events from Peer
+    // Capture Activity Events from Peer
+    socket.on('activity', (data) => {
+      console.log('socket.on(activity)', data);
+      if (data.type === 'start') {
+        console.log('Peer starting movie mode');
+        toggleMovieMode(true, false);
+      } else if (data.type === 'stop') {
+        toggleMovieMode(false);
+      } else if (data.type === 'sync') {
+        // Playback Sync Feedback
+        if (data.action === 'pause') {
+          statusOverlay.textContent = "⏸ Paused";
+          statusOverlay.style.display = 'block';
+        } else if (data.action === 'play') {
+          statusOverlay.style.display = 'none';
+        }
+      }
+    });
+
+    // HOST: Bind Events to ActivityVideo to Notify Peer
+    activityVideo.onplay = () => {
+      if (isStreaming) socket.emit('activity', { room, data: { type: 'sync', action: 'play' } });
+    };
+    activityVideo.onpause = () => {
+      if (isStreaming) socket.emit('activity', { room, data: { type: 'sync', action: 'pause' } });
+    };
+
+
+    function toggleMovieMode(enable, isHost = false) {
+      if (enable) {
+        document.body.classList.add('movie-mode');
+
+        // Add Host or Peer View Class
+        if (isHost) {
+          document.body.classList.add('host-view');
+          document.body.classList.remove('peer-view');
+        } else {
+          document.body.classList.add('peer-view');
+          document.body.classList.remove('host-view');
+
+          // Show "Click for Fullscreen" toast for peer
+          const toast = document.createElement('div');
+          toast.id = 'fs-toast';
+          toast.textContent = "👆 Tap for Cinematic Mode";
+          toast.style.cssText = "position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); color:#0ff; padding:20px; border:2px solid #ff00ff; z-index:100; cursor:pointer; font-size:1.5rem; animation: fadeOut 5s forwards; pointer-events:auto;";
+          toast.onclick = () => {
+            document.body.requestFullscreen().catch(e => console.log(e));
+            toast.remove();
+          };
+          document.body.appendChild(toast);
+          setTimeout(() => { if (toast.parentNode) toast.remove(); }, 5000);
+        }
+
+        chatToggleBtn.style.display = 'block';
+        customControls.style.display = isHost ? 'flex' : 'none'; // Only host sees controls
+
+        // Auto Fullscreen
+        if (document.body.requestFullscreen) {
+          document.body.requestFullscreen().catch(err => console.log('Fullscreen blocked:', err));
+        }
+      } else {
+        document.body.classList.remove('movie-mode');
+        document.body.classList.remove('host-view');
+        document.body.classList.remove('peer-view');
+
+        chatToggleBtn.style.display = 'none';
+        chatOverlay.style.display = 'none'; // Ensure closed
+        customControls.style.display = 'none';
+
+        // Remove toast if exists
+        const toast = document.getElementById('fs-toast');
+        if (toast) toast.remove();
+
+        // Return Chat to Original Spot
+        chatAreaOriginal.appendChild(chatContent);
+        chatAreaOriginal.appendChild(inputArea);
+
+        if (document.fullscreenElement) document.exitFullscreen();
+      }
+    }
+
+    // Chat Toggle
+    chatToggleBtn.onclick = () => {
+      if (chatOverlay.style.display === 'flex') {
+        chatOverlay.style.display = 'none';
+      } else {
+        chatOverlay.style.display = 'flex';
+        // Move Chat Content Here
+        if (!floatingChatContainer.contains(chatContent)) {
+          floatingChatContainer.appendChild(chatContent);
+          floatingChatContainer.appendChild(inputArea);
+        }
+      }
+    };
+
+    closeChatBtn.onclick = () => {
+      chatOverlay.style.display = 'none';
+    };
+
+    // Custom Video Controls
+    document.getElementById('btn-play-pause').onclick = () => {
+      if (activityVideo.paused) {
+        activityVideo.play();
+        document.getElementById('btn-play-pause').textContent = "⏸";
+      } else {
+        activityVideo.pause();
+        document.getElementById('btn-play-pause').textContent = "▶";
+      }
+    };
+
+    document.getElementById('btn-skip-back').onclick = () => {
+      activityVideo.currentTime -= 10;
+    };
+
+    document.getElementById('btn-skip-fwd').onclick = () => {
+      activityVideo.currentTime += 10;
+    };
+
+    // Activity Button -> Trigger File Input
+    btnActivity.onclick = () => {
+      if (isStreaming) {
+        stopActivity();
+      } else {
+        fileInput.click();
+      }
+    };
+
+    // File Input Change -> Start Streaming
+    fileInput.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const fileURL = URL.createObjectURL(file);
+        activityVideo.src = fileURL;
+
+        // Host Mode: Show Controls
+        toggleMovieMode(true, true);
+
+        // Notify Peer
+        socket.emit('activity', { room, data: { type: 'start' } });
+        await activityVideo.play();
+
+        // Replace tracks
+        startActivityStream(activityVideo);
+
+        btnActivity.textContent = "STOP ACTIVITY";
+        btnActivity.classList.add('off'); // Use 'off' style for stop state
+        isStreaming = true;
+      }
+    };
+
+    async function startActivityStream(videoElem) {
+      // 1. Capture stream from video element
+      // captureStream() might need prefix in some browsers, but standard is captureStream()
+      const stream = videoElem.captureStream ? videoElem.captureStream() : videoElem.mozCaptureStream();
+
+      const videoTrack = stream.getVideoTracks()[0];
+      const audioTrack = stream.getAudioTracks()[0];
+
+      if (peerConn) {
+        const senders = peerConn.getSenders();
+
+        // Replace Video Track
+        const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+        if (videoSender && videoTrack) {
+          console.log('Replacing video track with movie...');
+          await videoSender.replaceTrack(videoTrack);
+        }
+
+        // Replace Audio Track (if movie has audio)
+        // Note: This replaces the microphone. 
+        const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
+        if (audioSender && audioTrack) {
+          console.log('Replacing audio track with movie...');
+          await audioSender.replaceTrack(audioTrack);
+        }
+      }
+
+      // Also show the activity video locally instead of camera? 
+      // User said "streamed live to both". 
+      // The sender sees the local playback (activityVideo). 
+      // We should swap the local view to show the movie.
+      localVideo.srcObject = null;
+      localVideo.src = "";
+      // We can just overlay the activityVideo or hide localVideo.
+      localVideo.style.display = 'none';
+      activityVideo.style.display = 'block';
+      activityVideo.style.width = '100%';
+      activityVideo.style.height = '48%';
+      activityVideo.style.objectFit = 'contain';
+      activityVideo.style.background = '#000';
+      activityVideo.style.border = '2px solid #0ff';
+      activityVideo.style.borderRadius = '8px';
+    }
+
+    async function stopActivity() {
+      // Notify Peer
+      socket.emit('activity', { room, data: { type: 'stop' } });
+
+      // Revert to Local Camera/Mic
+      toggleMovieMode(false);
+      isStreaming = false;
+      activityVideo.pause();
+      activityVideo.style.display = 'none';
+      localVideo.style.display = 'block';
+
+      // Restore local video src
+      localVideo.srcObject = localStream;
+
+      if (peerConn && localStream) {
+        const senders = peerConn.getSenders();
+
+        const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+        if (videoSender) await videoSender.replaceTrack(localStream.getVideoTracks()[0]);
+
+        const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
+        if (audioSender) await videoSender.replaceTrack(localStream.getAudioTracks()[0]);
+      }
+
+      btnActivity.textContent = "ACTIVITY";
+      btnActivity.classList.remove('off');
+      fileInput.value = ''; // Reset input
+    }
+
+    // Fullscreen Logic
+    btnFullscreen.onclick = () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+        btnFullscreen.textContent = "FULLSCREEN";
+      } else {
+        // If in movie mode, fullscreen the body to keep the custom layout
+        if (document.body.classList.contains('movie-mode')) {
+          document.body.requestFullscreen().catch(e => console.log(e));
+        } else {
+          // Normal chat: Fullscreen the remote video (partner) not self
+          // If no remote video, fallback to body
+          if (remoteVideo.srcObject) {
+            remoteVideo.requestFullscreen();
+          } else {
+            document.body.requestFullscreen();
+          }
+        }
+        btnFullscreen.textContent = "EXIT FULL";
       }
     };
   </script>

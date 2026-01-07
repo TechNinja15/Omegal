@@ -69,6 +69,11 @@ io.on('connection', (socket) => {
     socket.to(room).emit('signal', data);
   });
 
+  // Relay Activity (Movie Mode) Status
+  socket.on('activity', ({ room, data }) => {
+    socket.to(room).emit('activity', data);
+  });
+
   // Disconnect
   socket.on('disconnect', () => {
     for (const roomID in rooms) {
