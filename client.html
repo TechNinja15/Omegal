@@ -4,132 +4,200 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Omegle Clone – Friend Chat</title>
+  <title>AmiGal – Friend Chat</title>
   <style>
     body {
       background-color: #000;
       color: #fff;
       font-family: 'Courier New', Courier, monospace;
       margin: 0;
+      overflow: hidden;
+      /* Prevent scrolling on full pages */
+    }
+
+    .full-page {
+      width: 100vw;
+      height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
+      justify-content: center;
+      background: #000;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .content-box {
+      background: #111;
+      border: 2px solid #ff00ff;
+      box-shadow: 0 0 40px rgba(255, 0, 255, 0.3);
+      padding: 40px;
+      border-radius: 15px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 90%;
+      max-width: 400px;
     }
 
     h2 {
       color: #ff00ff;
       text-shadow: 0 0 10px #ff00ff;
-      margin-top: 20px;
-      font-size: 1.5rem;
-    }
-
-    #main-container {
-      width: 90%;
-      max-width: 800px;
-      background: #111;
-      border: 2px solid #ff00ff;
-      box-shadow: 0 0 20px #ff00ff;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-    }
-
-    #control-panel {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
+      margin: 0 0 10px 0;
+      font-size: 2rem;
     }
 
     input {
       background: #222;
       border: 1px solid #ff00ff;
       color: #fff;
-      padding: 10px;
-      flex-grow: 1;
+      padding: 15px;
+      font-size: 1.2rem;
+      text-align: center;
       outline: none;
-      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+      transition: all 0.3s;
+    }
+
+    input:focus {
+      box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
     }
 
     button {
       background: #000;
       color: #ff00ff;
       border: 1px solid #ff00ff;
-      padding: 10px 20px;
+      padding: 15px;
       cursor: pointer;
       font-weight: bold;
+      font-size: 1.2rem;
       transition: all 0.3s;
       text-transform: uppercase;
-      white-space: nowrap;
+      width: 100%;
     }
 
     button:hover {
       background: #ff00ff;
       color: #000;
-      box-shadow: 0 0 15px #ff00ff;
+      box-shadow: 0 0 20px #ff00ff;
     }
 
-    button.active {
-      background: #ff00ff;
-      color: #000;
-    }
-
-    #status {
-      color: #0ff;
-      margin-bottom: 10px;
-      text-shadow: 0 0 5px #0ff;
+    .secondary-btn {
+      border-color: #666;
+      color: #888;
       font-size: 0.9rem;
+      padding: 10px;
+      margin-top: 5px;
+    }
+
+    .secondary-btn:hover {
+      background: #333;
+      color: #fff;
+      box-shadow: none;
+      border-color: #fff;
+    }
+
+    /* Page Call Layout */
+    #page-call {
+      justify-content: flex-start;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    #main-container {
+      display: flex;
+      width: 100%;
+      height: calc(100vh - 100px);
+      gap: 20px;
+      max-width: 1200px;
+    }
+
+    #video-area {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+      /* Allow shrinking below content size */
+    }
+
+    #video-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-grow: 1;
+      justify-content: center;
+      align-items: center;
+      /* Center videos horizontally */
+      min-height: 0;
+      /* Allow shrinking below content size */
+      overflow: hidden;
+      /* Ensure nothing sticks out */
+    }
+
+    video {
+      width: auto;
+      /* Let aspect ratio decide width */
+      max-width: 100%;
+      /* Don't overflow container width */
+      height: 48%;
+      /* Explicitly share height (leaving 4% for gap/margins) */
+      object-fit: contain;
+      background: #000;
+      border: 2px solid #0ff;
+      border-radius: 8px;
+    }
+
+    #chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #333;
+      background: #111;
+      border-radius: 8px;
+      overflow: hidden;
     }
 
     #chat {
-      border: 1px solid #333;
-      height: 300px;
-      overflow: auto;
-      padding: 10px;
-      background: #000;
-      margin-bottom: 10px;
+      flex-grow: 1;
+      padding: 15px;
+      overflow-y: auto;
       font-family: monospace;
       font-size: 0.9rem;
     }
 
     #chat div {
-      margin-bottom: 5px;
-      border-bottom: 1px solid #222;
-      padding-bottom: 2px;
+      margin-bottom: 8px;
+      word-wrap: break-word;
     }
 
-    #video-container {
+    #input-area {
       display: flex;
-      gap: 15px;
-      margin-top: 20px;
-      justify-content: center;
-      flex-wrap: wrap;
+      border-top: 1px solid #333;
     }
 
-    video {
-      width: 100%;
-      max-width: 350px;
-      height: auto;
-      background: #222;
-      border: 2px solid #0ff;
-      box-shadow: 0 0 10px #0ff;
-      border-radius: 5px;
+    #input-area input {
+      border: none;
+      text-align: left;
+    }
+
+    #input-area button {
+      width: auto;
+      border: none;
+      border-left: 1px solid #333;
     }
 
     #media-controls {
       display: flex;
       gap: 10px;
-      justify-content: center;
-      margin-top: 20px;
-      flex-wrap: wrap;
     }
 
     .control-btn {
       border-color: #0ff;
       color: #0ff;
-      flex: 1 1 auto;
-      max-width: 200px;
     }
 
     .control-btn:hover {
@@ -138,58 +206,87 @@
       box-shadow: 0 0 15px #0ff;
     }
 
-    .control-btn.off {
-      border-color: #ff0000;
-      color: #ff0000;
+    #status {
+      color: #0ff;
+      margin-bottom: 10px;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
     }
 
-    .control-btn.off:hover {
-      background: #ff0000;
-      color: #000;
-      box-shadow: 0 0 15px #ff0000;
-    }
+    /* Responsive Mobile Layout */
+    @media (max-width: 800px) {
+      .content-box {
+        width: 95%;
+        padding: 20px;
+      }
 
-    /* Mobile Responsive Styles */
-    @media (max-width: 600px) {
-      body {
-        padding: 10px;
+      #page-call {
+        padding: 5px;
+        height: 100vh;
+        overflow: hidden;
+        /* No scrolling on mobile call screen */
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+      }
+
+      #status {
+        font-size: 0.8rem;
+        margin-bottom: 5px;
       }
 
       #main-container {
+        flex-direction: column;
+        height: calc(100vh - 60px);
+        /* Adjust for header/status */
+        gap: 5px;
+      }
+
+      #video-area {
+        flex: 3;
+        /* Allocate ~75% space to video */
         width: 100%;
-        padding: 10px;
-        box-sizing: border-box;
-        /* Ensure padding doesn't affect width */
+        min-height: 0;
       }
 
       #video-container {
-        flex-direction: column;
+        justify-content: center;
         align-items: center;
       }
 
       video {
+        /* On mobile, width 100% helps fill the width since we are in portrait */
+        width: 100%;
         max-width: 100%;
-        /* Full width on mobile */
-        height: auto;
-      }
-
-      button {
-        padding: 12px;
-        /* Larger touch target */
-        font-size: 0.9rem;
-      }
-
-      #control-panel {
-        flex-direction: column;
+        height: 48%;
+        /* Split vertical space */
+        object-fit: contain;
+        border-radius: 4px;
+        border-width: 1px;
       }
 
       #media-controls {
-        flex-direction: column;
-        align-items: stretch;
+        justify-content: center;
+        padding: 5px;
       }
 
-      .control-btn {
-        max-width: none;
+      #chat-area {
+        flex: 1;
+        /* Allocate ~25% space to chat */
+        width: 100%;
+        height: auto;
+        min-height: 0;
+      }
+
+      #chat {
+        font-size: 0.8rem;
+      }
+
+      #input-area input {
+        font-size: 0.9rem;
       }
     }
   </style>
@@ -197,30 +294,58 @@
 
 <body>
 
+<<<<<<< HEAD
   <h2>AMI-CHAT</h2>
 
   <div id="main-container">
     <div id="control-panel">
       <input id="roomCode" placeholder="ENTER ROOM CODE">
       <button id="join">JOIN ROOM</button>
+=======
+  <!-- Page 1: Room Code -->
+  <div id="page-login-code" class="full-page">
+    <div class="content-box">
+      <h2>ENTER ROOM CODE</h2>
+      <input id="roomCode" placeholder="6-DIGIT CODE" maxlength="6" autofocus>
+      <button id="nextBtn">NEXT</button>
+>>>>>>> b5035e0 (fixed the calling quality and interface too)
     </div>
+  </div>
 
+  <!-- Page 2: Name -->
+  <div id="page-login-name" class="full-page" style="display:none;">
+    <div class="content-box">
+      <h2>ENTER YOUR NAME</h2>
+      <input id="userName" placeholder="YOUR NAME">
+      <button id="join">JOIN ROOM</button>
+      <button id="backToCode" class="secondary-btn">BACK</button>
+    </div>
+  </div>
+
+  <!-- Page 3: Call Interface -->
+  <div id="page-call" class="full-page" style="display:none;">
+    <h2>AMI-CHAT</h2>
     <div id="status">STATUS: DISCONNECTED</div>
 
-    <div id="chat"></div>
-    <div id="control-panel">
-      <input id="msg" placeholder="TYPE MESSAGE...">
-      <button id="send">SEND</button>
-    </div>
+    <div id="main-container">
+      <div id="video-area">
+        <div id="video-container">
+          <video id="localVideo" autoplay muted playsinline></video>
+          <video id="remoteVideo" autoplay playsinline></video>
+        </div>
+        <div id="media-controls">
+          <button id="btn-mic" class="control-btn">MUTE MIC</button>
+          <button id="btn-cam" class="control-btn">TURN OFF CAM</button>
+        </div>
+      </div>
 
-    <div id="video-container">
-      <video id="localVideo" autoplay muted playsinline></video>
-      <video id="remoteVideo" autoplay playsinline></video>
-    </div>
-
-    <div id="media-controls" style="display:none;">
-      <button id="btn-mic" class="control-btn">MUTE MIC</button>
-      <button id="btn-cam" class="control-btn">TURN OFF CAM</button>
+      <div id="chat-area">
+        <div id="chat"></div>
+        <div id="input-area">
+          <input id="msg" placeholder="TYPE MESSAGE...">
+          <button id="send">SEND</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -243,23 +368,55 @@
     const btnMic = document.getElementById('btn-mic');
     const btnCam = document.getElementById('btn-cam');
 
+    // Steps references
+    const pageLoginCode = document.getElementById('page-login-code');
+    const pageLoginName = document.getElementById('page-login-name');
+    const pageCall = document.getElementById('page-call');
+
+    // Inputs
+    const roomCodeInput = document.getElementById('roomCode');
+    const userNameInput = document.getElementById('userName');
+
     // UI functions
     function append(msg) { chat.innerHTML += '<div>' + msg + '</div>'; chat.scrollTop = chat.scrollHeight; }
 
-    // Join room
+    // Step 1 -> Step 2
+    document.getElementById('nextBtn').onclick = () => {
+      const code = roomCodeInput.value.trim();
+      if (!/^\d{6}$/.test(code)) {
+        alert('Please enter a valid 6-digit room code!');
+        return;
+      }
+      room = code;
+      pageLoginCode.style.display = 'none';
+      pageLoginName.style.display = 'flex'; // Flex to center content
+      userNameInput.focus();
+    };
+
+    // Step 2 Back -> Step 1
+    document.getElementById('backToCode').onclick = () => {
+      pageLoginName.style.display = 'none';
+      pageLoginCode.style.display = 'flex';
+    };
+
+    // Step 2 Join -> Step 3 (Call)
     document.getElementById('join').onclick = () => {
-      const code = document.getElementById('roomCode').value.trim();
-      if (code) {
-        room = code;
-        socket.emit('join_room', code);
+      const name = userNameInput.value.trim();
+      if (name) {
+        socket.emit('join_room', { room: room, name: name });
         status.textContent = 'STATUS: JOINING ROOM...';
+        pageLoginName.style.display = 'none';
+        pageCall.style.display = 'flex'; // Show main interface
+      } else {
+        alert('Please enter your name!');
       }
     };
 
     // Send text messages
     document.getElementById('send').onclick = () => {
       const t = document.getElementById('msg').value;
-      if (room && t) { socket.emit('message', { room, text: t }); append('<span style="color:#ff00ff">ME:</span> ' + t); document.getElementById('msg').value = ''; }
+      const myName = userNameInput.value.trim() || 'ME';
+      if (room && t) { socket.emit('message', { room, text: t }); append('<span style="color:#ff00ff">' + myName + ':</span> ' + t); document.getElementById('msg').value = ''; }
     };
 
     // Enter key for message
@@ -269,19 +426,33 @@
       }
     });
 
+    // Enter key for Room Code
+    roomCodeInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') document.getElementById('nextBtn').click();
+    });
+
+    // Enter key for Name
+    userNameInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') document.getElementById('join').click();
+    });
+
 
     // Socket events
     socket.on('waiting', () => status.textContent = 'STATUS: WAITING FOR FRIEND...');
 
-    socket.on('paired', async ({ room: r, initiator }) => {
+    let remoteUserName = 'Friend';
+
+    socket.on('paired', async ({ room: r, initiator, remoteName }) => {
       room = r;
-      status.textContent = 'STATUS: CONNECTED! ROOM: ' + room;
+      remoteUserName = remoteName || 'Friend';
+      status.textContent = 'STATUS: CONNECTED! ROOM: ' + room + ' | WITH: ' + remoteUserName;
+      // pageCall is already visible from join click
       const isInitiator = socket.id === initiator;
       console.log('Paired. Am I initiator?', isInitiator);
       await startVideoChat(isInitiator);
     });
 
-    socket.on('message', ({ from, text }) => append('<span style="color:#0ff">FRIEND:</span> ' + text));
+    socket.on('message', ({ from, text }) => append('<span style="color:#0ff">' + remoteUserName + ':</span> ' + text));
 
     let signalQueue = [];
 

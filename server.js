@@ -23,16 +23,36 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   // Join a room
-  socket.on('join_room', (roomID) => {
+  socket.on('join_room', (data) => {
+    // Handle both old (string) and new (object) formats slightly gracefully or just assume new
+    let roomID, name;
+    if (typeof data === 'object') {
+      roomID = data.room;
+      name = data.name;
+    } else {
+      roomID = data;
+      name = 'Anonymous';
+    }
+
+    // Attach name to socket object for easy retrieval
+    socket.userName = name;
+
     if (!rooms[roomID]) rooms[roomID] = [];
     rooms[roomID].push(socket.id);
     socket.join(roomID);
 
     if (rooms[roomID].length === 2) {
-      // Notify both users they are paired
-      // The socket that just joined triggers the pair, so they can be the initiator
-      io.to(roomID).emit('paired', { room: roomID, initiator: socket.id });
-      console.log(`Room ${roomID} is ready`);
+      // Get the two sockets
+      const socket1 = io.sockets.sockets.get(rooms[roomID][0]);
+      const socket2 = io.sockets.sockets.get(rooms[roomID][1]);
+
+      // Notify both users they are paired, sending the *other* person's name
+      // To socket1, send socket2's name
+      if (socket1) socket1.emit('paired', { room: roomID, initiator: socket.id, remoteName: socket2 ? socket2.userName : 'Partner' });
+      // To socket2, send socket1's name
+      if (socket2) socket2.emit('paired', { room: roomID, initiator: socket.id, remoteName: socket1 ? socket1.userName : 'Partner' });
+
+      console.log(`Room ${roomID} is ready. ${socket1?.userName} <-> ${socket2?.userName}`);
     } else {
       socket.emit('waiting');
       console.log(`Waiting for friend in room ${roomID}`);
