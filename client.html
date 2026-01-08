@@ -421,20 +421,29 @@
 
     #chat-toggle-btn {
       position: fixed;
-      top: 10px;
-      right: 10px;
+      top: 20px;
+      left: 20px;
       background: #ff00ff;
       color: #000;
       border: none;
-      padding: 5px 10px;
-      border-radius: 15px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
       font-weight: bold;
       cursor: pointer;
       z-index: 30;
       display: none;
-      font-size: 0.8rem;
-      /* Smaller */
       /* Only in movie mode */
+      font-size: 1.5rem;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px #ff00ff;
+      transition: all 0.3s;
+    }
+
+    #chat-toggle-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px #ff00ff;
     }
 
     /* Custom Video Controls */
@@ -540,7 +549,7 @@
     </div>
 
     <!-- Floating Elements for Movie Mode -->
-    <button id="chat-toggle-btn">💬 Chat</button>
+    <button id="chat-toggle-btn">💬</button>
     <div id="chat-overlay">
       <!-- Chat will be moved here via JS or valid CSS selector -->
       <div id="chat-header"
@@ -821,6 +830,9 @@
 
     // Capture Activity Events from Peer
     // Capture Activity Events from Peer
+    // Capture Activity Events from Peer
+    let isPeerVideoPlaying = false;
+
     socket.on('activity', (data) => {
       console.log('socket.on(activity)', data);
       if (data.type === 'start') {
@@ -828,23 +840,85 @@
         toggleMovieMode(true, false);
       } else if (data.type === 'stop') {
         toggleMovieMode(false);
+        isPeerVideoPlaying = false;
       } else if (data.type === 'sync') {
         // Playback Sync Feedback
         if (data.action === 'pause') {
+          isPeerVideoPlaying = false;
           statusOverlay.textContent = "⏸ Paused";
           statusOverlay.style.display = 'block';
+          // Peer: Show controls on pause
+          showControls();
+          clearTimeout(controlsTimeout);
         } else if (data.action === 'play') {
+          isPeerVideoPlaying = true;
           statusOverlay.style.display = 'none';
+          // Peer: Start auto-hide on play
+          clearTimeout(controlsTimeout);
+          controlsTimeout = setTimeout(hideControls, 4000);
+        }
+      }
+    });
+
+    // Auto-Hide Controls Logic
+    let controlsTimeout;
+
+    function hideControls() {
+      if (document.body.classList.contains('movie-mode')) {
+        customControls.style.display = 'none';
+        mediaControls.style.display = 'none';
+        chatToggleBtn.style.display = 'none';
+        document.body.style.cursor = 'none';
+      }
+    }
+
+    function showControls() {
+      if (document.body.classList.contains('movie-mode')) {
+        document.body.style.cursor = 'default';
+        mediaControls.style.display = 'flex';
+        // Custom controls only for host
+        if (document.body.classList.contains('host-view')) {
+          customControls.style.display = 'flex';
+        }
+        chatToggleBtn.style.display = 'flex';
+      }
+    }
+
+    function isVideoContentPlaying() {
+      if (document.body.classList.contains('host-view')) {
+        return !activityVideo.paused && !activityVideo.ended;
+      } else if (document.body.classList.contains('peer-view')) {
+        return isPeerVideoPlaying;
+      }
+      return false;
+    }
+
+    document.addEventListener('mousemove', () => {
+      if (document.body.classList.contains('movie-mode')) {
+        showControls();
+        clearTimeout(controlsTimeout);
+        if (isVideoContentPlaying()) {
+          controlsTimeout = setTimeout(hideControls, 4000);
         }
       }
     });
 
     // HOST: Bind Events to ActivityVideo to Notify Peer
     activityVideo.onplay = () => {
-      if (isStreaming) socket.emit('activity', { room, data: { type: 'sync', action: 'play' } });
+      if (isStreaming) {
+        socket.emit('activity', { room, data: { type: 'sync', action: 'play' } });
+        // Start auto-hide
+        clearTimeout(controlsTimeout);
+        controlsTimeout = setTimeout(hideControls, 4000);
+      }
     };
     activityVideo.onpause = () => {
-      if (isStreaming) socket.emit('activity', { room, data: { type: 'sync', action: 'pause' } });
+      if (isStreaming) {
+        socket.emit('activity', { room, data: { type: 'sync', action: 'pause' } });
+        // Show and keep controls
+        showControls();
+        clearTimeout(controlsTimeout);
+      }
     };
 
 
@@ -873,7 +947,7 @@
           setTimeout(() => { if (toast.parentNode) toast.remove(); }, 5000);
         }
 
-        chatToggleBtn.style.display = 'block';
+        chatToggleBtn.style.display = 'flex';
         customControls.style.display = isHost ? 'flex' : 'none'; // Only host sees controls
 
         // Auto Fullscreen
